@@ -17,9 +17,8 @@ where it is shown changes.
 - `ctrl-space !` (also `ctrl-space shift-1`) runs `mod.open:break-pane`.
 - It acts on `focused()`: the pane's terminal, its tab and its space.
 - Refuses with a warning notification, changing nothing, when no pane has the keyboard, when the
-  focused pane is a mod pane, or when the pane is the only pane of the only tab in its space
-  (`spaces()` gives each space's `tabs`). A pane alone in its tab moves when the space has another
-  tab: parking closes its old tab and the space stays.
+  focused pane is a mod pane, or when the pane is alone in its tab (fewer than two `panes()` share
+  its `tab`): it already is a tab of its own, so there is nothing to break.
 - Otherwise:
   1. `terminal.park {terminal}`.
   2. Waits, polling every 50 ms for up to 5 s, until no pane in `panes()` shows the terminal and
@@ -45,7 +44,7 @@ where it is shown changes.
   "none", "width": 1, "height": 1 } }`.
 - `keys.json` binds it in `global`: `"ctrl-space !"` and `"ctrl-space shift-1"`, both
   `"mod.open:break-pane"`.
-- `herdr` functions: `focused()`, `panes()`, `spaces()`, `terminals()`, `run` for
+- `herdr` functions: `focused()`, `panes()`, `terminals()`, `run` for
   `terminal.park`, `terminal.keep`, `space.select` and `tab.rename`, `notify`, `props().overlay`
   with `closeOverlay`, and `checking()`.
 - `gpui-kit`: `div`. The wait is a `cx.spawn` task started in `init` that awaits `cx.sleep(50)`.
@@ -61,10 +60,10 @@ where it is shown changes.
 - `terminal.park` also removes the `herdr.space` and `herdr.tab` labels, so `terminal.keep` has no
   memory of the old space: it puts the tab in the shown space. That is why the mod re-selects the
   source space before keeping.
-- Parking the only pane of a tab closes the tab, and parking the last pane of a space closes the
-  space; the window then shows another space, possibly on another machine, and the keep would land
-  there. Hence the refusal for the only pane of a space's only tab. A one-pane tab in a space with
-  other tabs is safe: the space survives the park and the keep lands in it.
+- Parking and keeping a pane alone in its tab rebuilds the same tab, same content, position and
+  number; only the repaint shows, so it reads as a reload. Hence the refusal. Since the mod only
+  parks a pane whose tab keeps another pane, the tab always survives the park, and the mod can
+  never close a space.
 - `terminal.keep` names the new tab after the terminal's address (`t4f`); `tab.rename` with an
   empty name gives it back its number.
 - A mod copy's tasks end when its overlay closes, so the popup must stay open until the keep has
@@ -81,6 +80,5 @@ where it is shown changes.
   shows the same pid).
 - The new tab has the keyboard, and `herdr-app status` shows no overlay left open.
 - The new tab is called by its number, not the terminal address.
-- In a one-pane tab of a space with other tabs, the binding closes that tab and a new tab in the
-  same space shows the same terminal.
-- In a space with one tab holding one pane, the binding shows a warning and nothing moves.
+- In a one-pane tab, the binding shows the warning `It is already the only pane in its tab.` and
+  nothing moves, whether or not the space has other tabs.

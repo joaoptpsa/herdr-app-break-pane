@@ -15,7 +15,6 @@ import {
   panes,
   props,
   run,
-  spaces,
   terminals,
 } from 'herdr';
 
@@ -59,9 +58,8 @@ function isParked(terminal) {
 
 /**
  * Explains why the focused pane can't be broken out, or returns null.
- * Parking a tab's only pane closes the tab, which is fine while its space
- * has another tab. When it is the space's last tab the space closes too,
- * and terminal.keep would put the terminal in whatever space is shown.
+ * A pane alone in its tab already is a tab of its own: parking and keeping
+ * it would rebuild the same tab, and could close its space.
  * @param {?Object} target focused()
  * @return {?string}
  */
@@ -73,14 +71,8 @@ function refusalFor(target) {
     return 'The focused pane is not a terminal.';
   }
   const tabPaneCount = panes().filter((pane) => pane.tab === target.tab).length;
-  if (tabPaneCount >= 2) {
-    return null;
-  }
-  const space = spaces().find((entry) => entry.id === target.space);
-  const spaceTabCount = space?.tabs.length ?? 0;
-  if (spaceTabCount < 2) {
-    return 'It is the only pane of the only tab in its space, so moving it ' +
-        'would close the space.';
+  if (tabPaneCount < 2) {
+    return 'It is already the only pane in its tab.';
   }
   return null;
 }

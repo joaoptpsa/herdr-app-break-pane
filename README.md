@@ -7,13 +7,13 @@ running, with its scrollback.
 Herdr has no break-pane command, so the mod runs two app commands on the focused pane's terminal:
 `terminal.park` (its pane goes, the program keeps running) and then
 `terminal.keep {place: "tab"}`, then names the new tab by its number with `tab.rename`. Nothing
-shows on screen while it works. A pane that is alone in its tab still moves when its space has
-another tab; the only pane of a space's only tab is left alone, because parking it would close the
-space. If the terminal ends up without a pane, an error notification says so, and clicking it gives
-the terminal a tab.
+shows on screen while it works. A pane alone in its tab is refused with a warning, because it
+already is a tab of its own; so the mod never closes a tab's last pane and can never close a space.
+If the terminal ends up without a pane, an error notification says so, and clicking it gives the
+terminal a tab.
 
-It makes no network requests, runs no programs and reads no files: it reads Herdr's space, pane,
-terminal and focus lists and runs `terminal.park`, `terminal.keep`, `space.select` and
+It makes no network requests, runs no programs and reads no files: it reads Herdr's pane, terminal
+and focus lists and runs `terminal.park`, `terminal.keep`, `space.select` and
 `tab.rename`.
 
 ## Requirements
