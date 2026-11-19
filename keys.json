@@ -1,0 +1,6 @@
+{
+  "global": {
+    "ctrl-space !": "mod.open:break-pane",
+    "ctrl-space shift-1": "mod.open:break-pane"
+  }
+}
