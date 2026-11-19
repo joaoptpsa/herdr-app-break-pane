@@ -1,20 +1,25 @@
 # herdr-app-break-pane
 
 A [Herdr](https://herdr.dev) desktop app mod: press `ctrl-space !` and the focused pane leaves its
-tab and becomes a new tab of the same space, like tmux `break-pane`. The program in it keeps
-running, with its scrollback.
+tab and becomes a tab of its own, like tmux `break-pane`. A dialog asks where: a new tab in the
+same space, another space on the same machine, or a new space in the pane's folder. Type the hint
+key or click the row. The program in it keeps running, with its scrollback.
 
 Herdr has no break-pane command, so the mod runs two app commands on the focused pane's terminal:
 `terminal.park` (its pane goes, the program keeps running) and then
-`terminal.keep {place: "tab"}`, then names the new tab by its number with `tab.rename`. Nothing
-shows on screen while it works. A pane alone in its tab is refused with a warning, because it
-already is a tab of its own; so the mod never closes a tab's last pane and can never close a space.
-If the terminal ends up without a pane, an error notification says so, and clicking it gives the
-terminal a tab.
+`terminal.keep {place: "tab"}`, then names the new tab by its number with `tab.rename`.
+`terminal.keep` puts the tab in the space that is shown, so for another space the mod shows that
+space, keeps the terminal there and shows the original space again; the dialog, which reads
+`Moving…` until the move ends, covers the switch. For a new space it runs `space.new` in the pane's
+folder, keeps the terminal there and closes the shell `space.new` started. Only spaces on the
+source space's machine are offered, and the "New tab in this space" row only shows when the pane
+shares its tab with another pane, since a pane alone in its tab already is a tab. If the
+terminal ends up without a pane, an error notification says so, and clicking it gives the terminal
+a tab.
 
-It makes no network requests, runs no programs and reads no files: it reads Herdr's pane, terminal
-and focus lists and runs `terminal.park`, `terminal.keep`, `space.select` and
-`tab.rename`.
+It makes no network requests, runs no programs and reads no files: it reads Herdr's space, pane,
+terminal and focus lists and runs `terminal.park`, `terminal.keep`, `space.select`, `space.new`,
+`tab.rename` and `tab.close`.
 
 ## Requirements
 
