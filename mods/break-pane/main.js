@@ -15,6 +15,7 @@ import {
   panes,
   props,
   run,
+  spaces,
   terminals,
 } from 'herdr';
 
@@ -58,9 +59,9 @@ function isParked(terminal) {
 
 /**
  * Explains why the focused pane can't be broken out, or returns null.
- * Parking a tab's only pane closes the tab, and the space too when it was
- * its last tab; terminal.keep then puts the terminal in whatever space is
- * shown, so a lone pane is left alone, as tmux leaves it.
+ * Parking a tab's only pane closes the tab, which is fine while its space
+ * has another tab. When it is the space's last tab the space closes too,
+ * and terminal.keep would put the terminal in whatever space is shown.
  * @param {?Object} target focused()
  * @return {?string}
  */
@@ -72,8 +73,14 @@ function refusalFor(target) {
     return 'The focused pane is not a terminal.';
   }
   const tabPaneCount = panes().filter((pane) => pane.tab === target.tab).length;
-  if (tabPaneCount < 2) {
-    return 'It is already the only pane in its tab.';
+  if (tabPaneCount >= 2) {
+    return null;
+  }
+  const space = spaces().find((entry) => entry.id === target.space);
+  const spaceTabCount = space?.tabs.length ?? 0;
+  if (spaceTabCount < 2) {
+    return 'It is the only pane of the only tab in its space, so moving it ' +
+        'would close the space.';
   }
   return null;
 }
@@ -124,6 +131,21 @@ function notifyStranded(terminal, body) {
     level: 'error',
     action: {name: 'terminal.keep', args: {terminal, place: 'tab'}},
   });
+}
+
+/**
+ * Names the terminal's tab by its number, as a new tab is, instead of the
+ * terminal address terminal.keep gives it. Returns an error message, or null.
+ * @param {string} terminal
+ * @return {?string}
+ */
+function nameTabByNumber(terminal) {
+  const pane = panes().find((entry) => entry.terminal === terminal);
+  if (!pane) {
+    return `no pane shows ${terminal}`;
+  }
+  const renameError = runCaught('tab.rename', {id: pane.tab, name: ''});
+  return renameError;
 }
 
 /** A one-shot action: moves the focused terminal to a new tab, then closes. */
@@ -185,16 +207,20 @@ export default class BreakPane extends View {
 
     this.phase = Phase.KEEPING;
     const firstError = await this.keepAsTab(cx);
-    if (!firstError) {
-      this.phase = Phase.DONE;
-      return;
-    }
-    const secondError = await this.keepAsTab(cx);
+    const secondError = firstError ? await this.keepAsTab(cx) : null;
     this.phase = Phase.DONE;
-    if (!secondError) {
+    if (secondError) {
+      notifyStranded(terminal, `terminal.keep failed twice: ${secondError}.`);
       return;
     }
-    notifyStranded(terminal, `terminal.keep failed twice: ${secondError}.`);
+    const renameError = nameTabByNumber(terminal);
+    if (renameError) {
+      notify({
+        title: 'Break pane could not name the new tab',
+        body: renameError,
+        level: 'warning',
+      });
+    }
   }
 
   /**
